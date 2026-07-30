@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { QuestionBlocks } from "@/components/QuestionBlocks";
+import type { PracticeQuestion } from "@/lib/questions";
 
 type View = "home" | "practice" | "progress";
 
@@ -17,24 +19,24 @@ const topics = [
   { id: "10", name: "Boolean logic", score: 90, questions: 29, color: "#0DAE91" },
 ];
 
-const questions = [
+const fallbackQuestions: PracticeQuestion[] = [
   {
     eyebrow: "9.2 SQL queries · 1 mark",
-    prompt: "Which SQL keyword is used to arrange query results in ascending or descending order?",
+    blocks: [{ type: "paragraph", text: "Which SQL keyword is used to arrange query results in ascending or descending order?" }],
     options: ["GROUP BY", "ORDER BY", "SORT", "ARRANGE"],
     answer: 1,
     explanation: "ORDER BY sorts the returned records. ASC is the default order; DESC reverses it.",
   },
   {
     eyebrow: "9.1 Database concepts · 2 marks",
-    prompt: "A school stores each student in one row. What is the correct database term for a row?",
+    blocks: [{ type: "paragraph", text: "A school stores each student in one row. What is the correct database term for a row?" }],
     options: ["Field", "Record", "Table", "Primary key"],
     answer: 1,
     explanation: "A row is a record. Each value within that record is held in a field.",
   },
   {
     eyebrow: "9.2 SQL queries · 2 marks",
-    prompt: "Which clause filters records before they are returned by a SELECT query?",
+    blocks: [{ type: "paragraph", text: "Which clause filters records before they are returned by a SELECT query?" }],
     options: ["FROM", "WHERE", "ORDER BY", "AS"],
     answer: 1,
     explanation: "WHERE applies a condition, so only matching records appear in the result.",
@@ -64,6 +66,16 @@ export default function Home() {
   const [checked, setChecked] = useState(false);
   const [points, setPoints] = useState(1240);
   const [query, setQuery] = useState("");
+  const [questions, setQuestions] = useState<PracticeQuestion[]>(fallbackQuestions);
+
+  useEffect(() => {
+    fetch("/api/questions?topic=9")
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (payload?.questions?.length) setQuestions(payload.questions);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const filteredTopics = useMemo(
     () => topics.filter((topic) => topic.name.toLowerCase().includes(query.toLowerCase())),
@@ -237,7 +249,7 @@ export default function Home() {
             </div>
             <article className="question-card">
               <span>{answer.eyebrow}</span>
-              <h2>{answer.prompt}</h2>
+              <QuestionBlocks blocks={answer.blocks} />
               <div className="options">
                 {answer.options.map((option, index) => (
                   <button
