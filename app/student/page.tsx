@@ -26,7 +26,8 @@ export default function StudentDashboard() {
   async function authenticate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setMessage("Working…");
     const form = new FormData(event.currentTarget), email = String(form.get("email")), password = String(form.get("password"));
-    const action = String(form.get("action"));
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const action = submitter?.value ?? "signin";
     const result = action === "signup" ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
     setMessage(result.error?.message ?? (action === "signup" && !result.data.session ? "Check your email to confirm your account." : "Signed in."));
   }
