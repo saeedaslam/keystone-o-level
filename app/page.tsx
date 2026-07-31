@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QuestionBlocks } from "@/components/QuestionBlocks";
 import type { PracticeQuestion } from "@/lib/questions";
 
@@ -71,16 +71,27 @@ export default function Home() {
   const [writtenAnswer, setWrittenAnswer] = useState("");
   const [selfMarked, setSelfMarked] = useState<boolean | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questionError, setQuestionError] = useState("");
+
+  const loadQuestions = useCallback(async (topicId: string) => {
+    setLoadingQuestions(true);
+    setQuestionError("");
+    try {
+      const response = await fetch(`/api/questions?topic=${topicId}`);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Questions could not be loaded.");
+      setQuestions(payload?.questions ?? []);
+    } catch (error) {
+      setQuestions([]);
+      setQuestionError(error instanceof Error ? error.message : "Questions could not be loaded.");
+    } finally {
+      setLoadingQuestions(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetch(`/api/questions?topic=${activeTopic}`)
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => {
-        setQuestions(payload?.questions ?? []);
-      })
-      .catch(() => setQuestions(activeTopic === "9" ? fallbackQuestions : []))
-      .finally(() => setLoadingQuestions(false));
-  }, [activeTopic]);
+    void loadQuestions(activeTopic);
+  }, [activeTopic, loadQuestions]);
 
   const filteredTopics = useMemo(
     () => topics.filter((topic) => topic.name.toLowerCase().includes(query.toLowerCase())),
@@ -88,7 +99,7 @@ export default function Home() {
   );
 
   const startPractice = (topicId = "9") => {
-    setLoadingQuestions(true);
+    if (topicId === activeTopic) void loadQuestions(topicId);
     setActiveTopic(topicId);
     setView("practice");
     setPracticeOpen(true);
@@ -258,7 +269,7 @@ export default function Home() {
               <div><strong>{topics.find((topic) => topic.id === activeTopic)?.name}</strong><span>{questions.length ? `${questionIndex + 1} of ${questions.length}` : "Topic practice"}</span></div>
               <div className="quiz-progress"><i style={{ width: `${questions.length ? ((questionIndex + 1) / questions.length) * 100 : 0}%` }} /></div>
             </div>
-            {loadingQuestions ? <article className="question-card empty-practice"><h2>Loading questions…</h2></article> : !answer ? <article className="question-card empty-practice"><h2>No published questions yet.</h2><p>This topic is ready in the syllabus. Add original questions in the <a href="/admin/questions">Content Studio</a>, then publish them.</p></article> : <article className="question-card">
+            {loadingQuestions ? <article className="question-card empty-practice"><h2>Loading questions…</h2></article> : questionError ? <article className="question-card empty-practice"><h2>Questions could not be loaded.</h2><p>{questionError}</p><button className="check" onClick={() => void loadQuestions(activeTopic)}>Try again</button></article> : !answer ? <article className="question-card empty-practice"><h2>No published questions yet.</h2><p>This topic is ready in the syllabus. Add original questions in the <a href="/admin/questions">Content Studio</a>, then publish them.</p></article> : <article className="question-card">
               <span>{answer.eyebrow}</span>
               <QuestionBlocks blocks={answer.blocks} />
               {(answer.questionType ?? "mcq") === "mcq" ? <div className="options">
