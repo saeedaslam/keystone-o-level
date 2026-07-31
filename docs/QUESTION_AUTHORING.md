@@ -20,6 +20,23 @@ Questions are stored as ordered `stem_blocks`, so the exam engine can render mix
 
 Never upload Cambridge past-paper scans or copied diagrams. Recreate original, syllabus-aligned artwork and always provide useful alt text.
 
+## Content Studio
+
+Open `/admin/questions` to create a syllabus-mapped question. The studio provides:
+
+- topic and learning-objective selection from the live 2026–2028 hierarchy
+- MCQ, structured, SQL and pseudocode question types
+- paragraph, table, image, code and list content blocks
+- live preview, mark scheme, model answer and draft/review/publish status
+
+Writers must sign in with Supabase Auth and have `{"role":"admin"}` in `app_metadata`. Set this trusted server-managed metadata in the Supabase dashboard; never use editable `user_metadata` for authorization.
+
+The database rejects a question if its learning objective belongs to a different topic. Public users can read only published questions; administrators can read and manage the full workflow.
+
+## Student practice
+
+The practice library now opens every syllabus topic. MCQs are marked automatically. Structured, SQL and pseudocode questions collect a written response, reveal the model answer and marking points, and ask the student to self-mark before continuing.
+
 ## Image block
 
 ```json

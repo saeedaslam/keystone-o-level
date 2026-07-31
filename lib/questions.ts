@@ -12,4 +12,8 @@ export type PracticeQuestion = {
   options: string[];
   answer: number;
   explanation: string;
+  questionType?: "mcq" | "structured" | "sql" | "pseudocode";
+  marks?: number;
+  markScheme?: Array<{ mark?: number; point?: string } | string>;
+  modelAnswer?: unknown;
 };

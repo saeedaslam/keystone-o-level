@@ -67,37 +67,48 @@ export default function Home() {
   const [points, setPoints] = useState(1240);
   const [query, setQuery] = useState("");
   const [questions, setQuestions] = useState<PracticeQuestion[]>(fallbackQuestions);
+  const [activeTopic, setActiveTopic] = useState("9");
+  const [writtenAnswer, setWrittenAnswer] = useState("");
+  const [selfMarked, setSelfMarked] = useState<boolean | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   useEffect(() => {
-    fetch("/api/questions?topic=9")
+    fetch(`/api/questions?topic=${activeTopic}`)
       .then((response) => response.ok ? response.json() : null)
       .then((payload) => {
-        if (payload?.questions?.length) setQuestions(payload.questions);
+        setQuestions(payload?.questions ?? []);
       })
-      .catch(() => undefined);
-  }, []);
+      .catch(() => setQuestions(activeTopic === "9" ? fallbackQuestions : []))
+      .finally(() => setLoadingQuestions(false));
+  }, [activeTopic]);
 
   const filteredTopics = useMemo(
     () => topics.filter((topic) => topic.name.toLowerCase().includes(query.toLowerCase())),
     [query],
   );
 
-  const startPractice = () => {
+  const startPractice = (topicId = "9") => {
+    setLoadingQuestions(true);
+    setActiveTopic(topicId);
     setView("practice");
     setPracticeOpen(true);
     setQuestionIndex(0);
     setSelected(null);
     setChecked(false);
+    setWrittenAnswer("");
+    setSelfMarked(null);
   };
 
   const answer = questions[questionIndex];
 
   const nextQuestion = () => {
-    if (checked && selected === answer.answer) setPoints((value) => value + 10);
+    if (checked && (answer.questionType === "mcq" ? selected === answer.answer : selfMarked)) setPoints((value) => value + 10);
     if (questionIndex < questions.length - 1) {
       setQuestionIndex((value) => value + 1);
       setSelected(null);
       setChecked(false);
+      setWrittenAnswer("");
+      setSelfMarked(null);
     } else {
       setPracticeOpen(false);
       setView("progress");
@@ -174,7 +185,7 @@ export default function Home() {
                 <div className="continue-bottom">
                   <p><span>◉</span><strong>8 min</strong><small>recommended</small></p>
                   <p><span>◇</span><strong>10</strong><small>questions</small></p>
-                  <button onClick={startPractice}>Continue <Icon name="arrow" /></button>
+                  <button onClick={() => startPractice("9")}>Continue <Icon name="arrow" /></button>
                 </div>
               </article>
               <article className="mock-card">
@@ -192,7 +203,7 @@ export default function Home() {
             </section>
             <div className="topic-grid">
               {filteredTopics.slice(0, 5).map((topic) => (
-                <button className="topic-card" key={topic.id} onClick={() => topic.id === "9" ? startPractice() : setView("practice")}>
+                <button className="topic-card" key={topic.id} onClick={() => startPractice(topic.id)}>
                   <span className="topic-number" style={{ background: topic.color }}>{topic.id}</span>
                   <span className="topic-info"><strong>{topic.name}</strong><small>{topic.questions} original questions</small></span>
                   <span className="topic-score"><b>{topic.score ? `${topic.score}%` : "Start"}</b><i><em style={{ width: `${topic.score}%`, background: topic.color }} /></i></span>
@@ -202,7 +213,7 @@ export default function Home() {
             <section className="insight">
               <div className="insight-icon">◎</div>
               <div><span>YOUR WEEKLY INSIGHT</span><h3>You’re strongest in Boolean logic.</h3><p>Database queries need a little more attention. Two short sessions this week could lift your mastery above 60%.</p></div>
-              <button onClick={startPractice}>Practise databases <Icon name="arrow" /></button>
+              <button onClick={() => startPractice("9")}>Practise databases <Icon name="arrow" /></button>
             </section>
           </div>
         )}
@@ -215,7 +226,7 @@ export default function Home() {
             </section>
             <div className="all-topic-grid">
               {filteredTopics.map((topic) => (
-                <button className="large-topic" key={topic.id} onClick={() => topic.id === "9" ? startPractice() : undefined}>
+                <button className="large-topic" key={topic.id} onClick={() => startPractice(topic.id)}>
                   <span className="topic-number" style={{ background: topic.color }}>{topic.id}</span>
                   <div><strong>{topic.name}</strong><small>{topic.questions} questions · {topic.score ? `${topic.score}% mastered` : "Not started"}</small></div>
                   <span className="go">→</span>
@@ -244,13 +255,13 @@ export default function Home() {
           <div className="practice-overlay">
             <div className="quiz-top">
               <button onClick={() => setPracticeOpen(false)}>×</button>
-              <div><strong>Databases</strong><span>{questionIndex + 1} of {questions.length}</span></div>
-              <div className="quiz-progress"><i style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
+              <div><strong>{topics.find((topic) => topic.id === activeTopic)?.name}</strong><span>{questions.length ? `${questionIndex + 1} of ${questions.length}` : "Topic practice"}</span></div>
+              <div className="quiz-progress"><i style={{ width: `${questions.length ? ((questionIndex + 1) / questions.length) * 100 : 0}%` }} /></div>
             </div>
-            <article className="question-card">
+            {loadingQuestions ? <article className="question-card empty-practice"><h2>Loading questions…</h2></article> : !answer ? <article className="question-card empty-practice"><h2>No published questions yet.</h2><p>This topic is ready in the syllabus. Add original questions in the <a href="/admin/questions">Content Studio</a>, then publish them.</p></article> : <article className="question-card">
               <span>{answer.eyebrow}</span>
               <QuestionBlocks blocks={answer.blocks} />
-              <div className="options">
+              {(answer.questionType ?? "mcq") === "mcq" ? <div className="options">
                 {answer.options.map((option, index) => (
                   <button
                     key={option}
@@ -258,10 +269,11 @@ export default function Home() {
                     onClick={() => !checked && setSelected(index)}
                   ><b>{String.fromCharCode(65 + index)}</b>{option}</button>
                 ))}
-              </div>
-              {checked && <div className="feedback"><strong>{selected === answer.answer ? "That’s right." : "Not quite yet."}</strong><p>{answer.explanation}</p></div>}
-              <button className="check" disabled={selected === null} onClick={() => checked ? nextQuestion() : setChecked(true)}>{checked ? (questionIndex === questions.length - 1 ? "See results" : "Next question") : "Check answer"} <Icon name="arrow" /></button>
-            </article>
+              </div> : <div className="written-response"><label>Your answer<textarea value={writtenAnswer} onChange={(event) => setWrittenAnswer(event.target.value)} disabled={checked} placeholder="Write your answer here…" /></label></div>}
+              {checked && (answer.questionType ?? "mcq") === "mcq" && <div className="feedback"><strong>{selected === answer.answer ? "That’s right." : "Not quite yet."}</strong><p>{answer.explanation}</p></div>}
+              {checked && answer.questionType !== "mcq" && <div className="self-mark"><h3>Mark your response</h3>{answer.modelAnswer != null && <p><strong>Model answer:</strong> {String(answer.modelAnswer)}</p>}<ul>{answer.markScheme?.map((point, index) => <li key={index}>{typeof point === "string" ? point : point.point}</li>)}</ul><div><button className={selfMarked === true ? "chosen" : ""} onClick={() => setSelfMarked(true)}>I earned the marks</button><button className={selfMarked === false ? "chosen" : ""} onClick={() => setSelfMarked(false)}>Needs more work</button></div></div>}
+              <button className="check" disabled={(!checked && ((answer.questionType ?? "mcq") === "mcq" ? selected === null : !writtenAnswer.trim())) || (checked && answer.questionType !== "mcq" && selfMarked === null)} onClick={() => checked ? nextQuestion() : setChecked(true)}>{checked ? (questionIndex === questions.length - 1 ? "Finish practice" : "Next question") : answer.questionType === "mcq" ? "Check answer" : "Show mark scheme"} <Icon name="arrow" /></button>
+            </article>}
           </div>
         )}
       </section>

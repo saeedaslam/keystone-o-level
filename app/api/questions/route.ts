@@ -12,22 +12,28 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase
     .from("questions")
-    .select("id, marks, question_type, stem_blocks, options, correct_answer, explanation, topics!inner(topic_number)")
+    .select("id, marks, question_type, stem_blocks, options, correct_answer, explanation, mark_scheme, model_answer, syllabus_objectives(code), topics!inner(topic_number)")
     .eq("status", "published")
     .eq("topics.topic_number", topic)
     .limit(20);
 
   if (error) return NextResponse.json({ questions: [], error: error.message }, { status: 500 });
   return NextResponse.json({
-    questions: (data ?? []).map((question) => ({
+    questions: (data ?? []).map((question) => {
+      const objective = Array.isArray(question.syllabus_objectives) ? question.syllabus_objectives[0] : question.syllabus_objectives;
+      return ({
       id: question.id,
-      eyebrow: `${topic} · ${question.question_type} · ${question.marks} mark${question.marks === 1 ? "" : "s"}`,
+      eyebrow: `${objective?.code ?? topic} · ${question.question_type} · ${question.marks} mark${question.marks === 1 ? "" : "s"}`,
       blocks: question.stem_blocks,
       options: Array.isArray(question.options)
         ? question.options.map((option: unknown) => typeof option === "string" ? option : String((option as { text?: string }).text ?? ""))
         : [],
       answer: Number(question.correct_answer),
       explanation: question.explanation ?? "",
-    })),
+      questionType: question.question_type,
+      marks: question.marks,
+      markScheme: Array.isArray(question.mark_scheme) ? question.mark_scheme : [],
+      modelAnswer: question.model_answer,
+    }); }),
   });
 }
