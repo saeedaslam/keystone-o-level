@@ -1,22 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { QuestionBlocks } from "@/components/QuestionBlocks";
 import type { PracticeQuestion } from "@/lib/questions";
 
 type View = "home" | "practice" | "progress";
 
 const topics = [
-  { id: "1", name: "Data representation", score: 82, questions: 34, color: "#6558F5" },
-  { id: "2", name: "Data transmission", score: 71, questions: 28, color: "#0DAE91" },
-  { id: "3", name: "Hardware", score: 64, questions: 42, color: "#FF8A55" },
-  { id: "4", name: "Software", score: 76, questions: 31, color: "#2D8CFF" },
-  { id: "5", name: "The internet", score: 58, questions: 26, color: "#EB5B72" },
-  { id: "6", name: "Automated technologies", score: 0, questions: 22, color: "#9D68D9" },
-  { id: "7", name: "Algorithm design", score: 68, questions: 45, color: "#EAA923" },
-  { id: "8", name: "Programming", score: 73, questions: 51, color: "#18A6B7" },
-  { id: "9", name: "Databases", score: 47, questions: 38, color: "#6558F5" },
-  { id: "10", name: "Boolean logic", score: 90, questions: 29, color: "#0DAE91" },
+  { id: "1", name: "Data representation", color: "#6558F5" },
+  { id: "2", name: "Data transmission", color: "#0DAE91" },
+  { id: "3", name: "Hardware", color: "#FF8A55" },
+  { id: "4", name: "Software", color: "#2D8CFF" },
+  { id: "5", name: "The internet", color: "#EB5B72" },
+  { id: "6", name: "Automated technologies", color: "#9D68D9" },
+  { id: "7", name: "Algorithm design", color: "#EAA923" },
+  { id: "8", name: "Programming", color: "#18A6B7" },
+  { id: "9", name: "Databases", color: "#6558F5" },
+  { id: "10", name: "Boolean logic", color: "#0DAE91" },
 ];
 
 const fallbackQuestions: PracticeQuestion[] = [
@@ -64,7 +64,6 @@ export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
-  const [points, setPoints] = useState(1240);
   const [query, setQuery] = useState("");
   const [questions, setQuestions] = useState<PracticeQuestion[]>(fallbackQuestions);
   const [activeTopic, setActiveTopic] = useState("9");
@@ -89,17 +88,13 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadQuestions(activeTopic);
-  }, [activeTopic, loadQuestions]);
-
   const filteredTopics = useMemo(
     () => topics.filter((topic) => topic.name.toLowerCase().includes(query.toLowerCase())),
     [query],
   );
 
   const startPractice = (topicId = "9") => {
-    if (topicId === activeTopic) void loadQuestions(topicId);
+    void loadQuestions(topicId);
     setActiveTopic(topicId);
     setView("practice");
     setPracticeOpen(true);
@@ -113,7 +108,6 @@ export default function Home() {
   const answer = questions[questionIndex];
 
   const nextQuestion = () => {
-    if (checked && (answer.questionType === "mcq" ? selected === answer.answer : selfMarked)) setPoints((value) => value + 10);
     if (questionIndex < questions.length - 1) {
       setQuestionIndex((value) => value + 1);
       setSelected(null);
@@ -152,16 +146,8 @@ export default function Home() {
           ))}
         </nav>
         <div className="side-bottom">
-          <div className="session-card">
-            <div><span>MJ</span><p><strong>May/June</strong><small>2027 session</small></p></div>
-            <div className="session-progress"><i /></div>
-            <small>286 days to go</small>
-          </div>
-          <button className="profile">
-            <span className="avatar">AS</span>
-            <span><strong>Alex Smith</strong><small>Student</small></span>
-            <b>•••</b>
-          </button>
+          <div className="session-card"><div><span>CS</span><p><strong>O Level 2210</strong><small>2026–2028 syllabus</small></p></div></div>
+          <button className="profile" onClick={() => window.location.assign("/student")}><span className="avatar">K</span><span><strong>Student account</strong><small>Sign in or view progress</small></span><b>→</b></button>
         </div>
       </aside>
 
@@ -169,7 +155,7 @@ export default function Home() {
         <header className="topbar">
           <label className="search"><Icon name="search" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics, questions..." /></label>
           <div className="top-actions">
-            <span className="points"><Icon name="flame" /> {points.toLocaleString()} pts</span>
+            <a className="points" href="/student">Account &amp; progress</a>
             <button className="icon-button" aria-label="Notifications"><Icon name="bell" /><i /></button>
             <span className="subject">CS <b>2210</b></span>
           </div>
@@ -180,10 +166,10 @@ export default function Home() {
             <section className="welcome">
               <div>
                 <span className="date">THURSDAY, 30 JULY</span>
-                <h1>Good afternoon, Alex.</h1>
-                <p>Small steps, strong results. Let’s make today count.</p>
+                <h1>Welcome to Keystone.</h1>
+                <p>Practise original questions mapped to the current syllabus.</p>
               </div>
-              <div className="streak"><span>12</span><p><strong>day streak</strong><small>Personal best: 18 days</small></p></div>
+              <div className="streak"><span>2210</span><p><strong>Computer Science</strong><small>Cambridge O Level</small></p></div>
             </section>
 
             <section className="hero-grid">
@@ -195,7 +181,7 @@ export default function Home() {
                 <div className="lesson-progress"><i /></div>
                 <div className="continue-bottom">
                   <p><span>◉</span><strong>8 min</strong><small>recommended</small></p>
-                  <p><span>◇</span><strong>10</strong><small>questions</small></p>
+                  <p><span>◇</span><strong>{questions.length || "—"}</strong><small>published questions</small></p>
                   <button onClick={() => startPractice("9")}>Continue <Icon name="arrow" /></button>
                 </div>
               </article>
@@ -203,7 +189,7 @@ export default function Home() {
                 <span className="pill orange">UP NEXT</span>
                 <h3>Paper 1: Theory</h3>
                 <p>Full timed mock · 1 hr 45 min</p>
-                <div className="mock-stats"><span><b>75</b><small>marks</small></span><span><b>15</b><small>questions</small></span><span><b>Ready</b><small>difficulty</small></span></div>
+                <div className="mock-stats"><span><b>75</b><small>target marks</small></span><span><b>Draft</b><small>bank expanding</small></span><span><b>105</b><small>minutes</small></span></div>
                 <button onClick={() => window.location.assign("/mock")}>View mock exam <Icon name="arrow" /></button>
               </article>
             </section>
@@ -216,8 +202,8 @@ export default function Home() {
               {filteredTopics.slice(0, 5).map((topic) => (
                 <button className="topic-card" key={topic.id} onClick={() => startPractice(topic.id)}>
                   <span className="topic-number" style={{ background: topic.color }}>{topic.id}</span>
-                  <span className="topic-info"><strong>{topic.name}</strong><small>{topic.questions} original questions</small></span>
-                  <span className="topic-score"><b>{topic.score ? `${topic.score}%` : "Start"}</b><i><em style={{ width: `${topic.score}%`, background: topic.color }} /></i></span>
+                  <span className="topic-info"><strong>{topic.name}</strong><small>Syllabus-mapped practice</small></span>
+                  <span className="topic-score"><b>Open</b></span>
                 </button>
               ))}
             </div>
@@ -239,7 +225,7 @@ export default function Home() {
               {filteredTopics.map((topic) => (
                 <button className="large-topic" key={topic.id} onClick={() => startPractice(topic.id)}>
                   <span className="topic-number" style={{ background: topic.color }}>{topic.id}</span>
-                  <div><strong>{topic.name}</strong><small>{topic.questions} questions · {topic.score ? `${topic.score}% mastered` : "Not started"}</small></div>
+                  <div><strong>{topic.name}</strong><small>Open published practice questions</small></div>
                   <span className="go">→</span>
                 </button>
               ))}
@@ -247,20 +233,7 @@ export default function Home() {
           </div>
         )}
 
-        {view === "progress" && (
-          <div className="page">
-            <section className="practice-head"><span className="date">YOUR PROGRESS</span><h1>Momentum you can see.</h1><p>Your recent practice is moving the right topics in the right direction.</p></section>
-            <div className="metric-row">
-              <article><span>Questions answered</span><strong>186</strong><small>↑ 28 this week</small></article>
-              <article><span>Average score</span><strong>72%</strong><small>↑ 6% this month</small></article>
-              <article><span>Topics mastered</span><strong>3/10</strong><small>2 close to mastery</small></article>
-            </div>
-            <article className="chart-card">
-              <div><h2>Mastery by topic</h2><span>Last 30 days</span></div>
-              {topics.slice(0, 6).map((topic) => <p key={topic.id}><label>{topic.name}</label><i><em style={{ width: `${topic.score}%`, background: topic.color }} /></i><b>{topic.score}%</b></p>)}
-            </article>
-          </div>
-        )}
+        {view === "progress" && <div className="page"><section className="practice-head"><span className="date">YOUR PROGRESS</span><h1>Your real results live in your account.</h1><p>Sign in to view completed attempts, average score, and marks practised.</p><a className="primary-link" href="/student">Open student dashboard →</a></section></div>}
 
         {practiceOpen && (
           <div className="practice-overlay">

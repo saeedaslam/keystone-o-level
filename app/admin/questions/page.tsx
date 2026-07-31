@@ -75,6 +75,7 @@ export default function QuestionAdminPage() {
   try { preview = JSON.parse(blocks); } catch { /* show validation on save */ }
 
   if (!session) return <main className="admin-shell"><section className="admin-login"><span className="admin-brand">K</span><h1>Content studio</h1><p>Sign in with a Supabase administrator account.</p><form onSubmit={signIn}><input name="email" type="email" placeholder="Email" required/><input name="password" type="password" placeholder="Password" required/><button>Sign in</button></form>{message && <output>{message}</output>}<Link href="/">← Back to practice</Link></section></main>;
+  if (session.user.app_metadata?.role !== "admin") return <main className="admin-shell"><section className="admin-login"><h1>Administrator access required</h1><p>This account is signed in but does not have the administrator role.</p><button onClick={() => supabase.auth.signOut()}>Sign out</button><Link href="/student">Open student dashboard</Link></section></main>;
 
   return <main className="admin-shell"><header className="admin-top"><div><span className="admin-brand">K</span><strong>Keystone Content Studio</strong></div><div><small>{session.user.email}</small><button onClick={() => supabase.auth.signOut()}>Sign out</button></div></header><div className="admin-grid">
     <form className="author-form" onSubmit={save}><div className="form-heading"><div><span>QUESTION AUTHORING</span><h1>Create an original question</h1></div><Link href="/">Open student view →</Link></div>

@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   const supabase = createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData.user) return NextResponse.json({ error: "Invalid session." }, { status: 401 });
+  if (userData.user.app_metadata?.role !== "admin") return NextResponse.json({ error: "Administrator role required." }, { status: 403 });
   const { data, error } = await supabase.from("questions").insert({
     topic_id: body.topicId, syllabus_objective_id: body.objectiveId, question_type: body.questionType,
     marks: Number(body.marks), difficulty: body.difficulty, stem_blocks: body.stemBlocks,
