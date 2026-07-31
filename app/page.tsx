@@ -133,7 +133,7 @@ export default function Home() {
             <button
               key={id}
               className={(view === id || (id === "mock" && view === "practice")) ? "active" : ""}
-              onClick={() => id === "progress" ? setView("progress") : id === "practice" ? setView("practice") : setView("home")}
+              onClick={() => id === "progress" ? window.location.assign("/student") : id === "mock" ? window.location.assign("/mock") : id === "practice" ? setView("practice") : setView("home")}
             >
               <Icon name={id} /><span>{label}</span>
               {id === "practice" && <em>New</em>}
@@ -193,7 +193,7 @@ export default function Home() {
                 <h3>Paper 1: Theory</h3>
                 <p>Full timed mock · 1 hr 45 min</p>
                 <div className="mock-stats"><span><b>75</b><small>marks</small></span><span><b>15</b><small>questions</small></span><span><b>Ready</b><small>difficulty</small></span></div>
-                <button onClick={() => setView("practice")}>View mock exam <Icon name="arrow" /></button>
+                <button onClick={() => window.location.assign("/mock")}>View mock exam <Icon name="arrow" /></button>
               </article>
             </section>
 
