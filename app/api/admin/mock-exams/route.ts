@@ -13,8 +13,9 @@ export async function POST(request: NextRequest) {
   const { data: questions, error: questionError } = await supabase.from("questions").select("id, marks").in("id", questionIds).in("status", ["reviewed", "published"]);
   if (questionError || questions?.length !== questionIds.length) return NextResponse.json({ error: "One or more selected questions are unavailable." }, { status: 400 });
   const totalMarks = questions.reduce((sum, question) => sum + question.marks, 0);
-  if (body.status === "published" && totalMarks !== 75) {
-    return NextResponse.json({ error: `A published paper must contain exactly 75 marks; this selection has ${totalMarks}. Save it as a draft instead.` }, { status: 400 });
+  const publishableTotals = [25, 50, 75];
+  if (body.status === "published" && !publishableTotals.includes(totalMarks)) {
+    return NextResponse.json({ error: `A published paper must contain 25, 50, or 75 marks; this selection has ${totalMarks}. Save it as a draft instead.` }, { status: 400 });
   }
   const { data: subject } = await supabase.from("subjects").select("id").eq("code", "2210").single();
   const { data: paper, error } = await supabase.from("exam_papers").insert({ subject_id: subject?.id, paper_number: Number(body.paperNumber), title: body.title, description: body.description || null, duration_minutes: Number(body.durationMinutes), total_marks: totalMarks, status: body.status === "published" ? "published" : "draft", created_by: user.user.id }).select("id, total_marks").single();
