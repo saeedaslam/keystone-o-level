@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient, type Session } from "@supabase/supabase-js";
 import { QuestionBlocks } from "@/components/QuestionBlocks";
 import type { PracticeQuestion } from "@/lib/questions";
 
@@ -59,6 +60,11 @@ function Icon({ name }: { name: string }) {
 }
 
 export default function Home() {
+  const supabase = useMemo(() => createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
+  ), []);
+  const [session, setSession] = useState<Session | null>(null);
   const [view, setView] = useState<View>("home");
   const [practiceOpen, setPracticeOpen] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -71,6 +77,23 @@ export default function Home() {
   const [selfMarked, setSelfMarked] = useState<boolean | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionError, setQuestionError] = useState("");
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+    return () => data.subscription.unsubscribe();
+  }, [supabase]);
+
+  const accountRole = session?.user.app_metadata?.role === "admin"
+    ? "admin"
+    : session?.user.app_metadata?.role === "reviewer"
+      ? "reviewer"
+      : "student";
+  const metadata = session?.user.user_metadata;
+  const storedName = metadata?.full_name
+    || [metadata?.first_name, metadata?.last_name].filter(Boolean).join(" ");
+  const accountName = storedName || session?.user.email || "Student account";
+  const accountInitial = accountName.charAt(0).toUpperCase() || "K";
 
   const loadQuestions = useCallback(async (topicId: string) => {
     setLoadingQuestions(true);
@@ -146,8 +169,19 @@ export default function Home() {
           ))}
         </nav>
         <div className="side-bottom">
+          {accountRole === "admin" && session && (
+            <div className="admin-shortcuts">
+              <strong>Administrator</strong>
+              <a href="/admin/questions">Content Studio <span>→</span></a>
+              <a href="/admin/mocks">Mock Assembly <span>→</span></a>
+            </div>
+          )}
           <div className="session-card"><div><span>CS</span><p><strong>O Level 2210</strong><small>2026–2028 syllabus</small></p></div></div>
-          <button className="profile" onClick={() => window.location.assign("/student")}><span className="avatar">K</span><span><strong>Student account</strong><small>Sign in or view progress</small></span><b>→</b></button>
+          <button className="profile" onClick={() => window.location.assign("/student")}>
+            <span className="avatar">{accountInitial}</span>
+            <span><strong>{accountName}</strong><small>{session ? `${accountRole[0].toUpperCase()}${accountRole.slice(1)} account` : "Sign in or view progress"}</small></span>
+            <b>→</b>
+          </button>
         </div>
       </aside>
 
@@ -155,7 +189,9 @@ export default function Home() {
         <header className="topbar">
           <label className="search"><Icon name="search" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics, questions..." /></label>
           <div className="top-actions">
-            <a className="points" href="/student">Account &amp; progress</a>
+            <a className="points" href={accountRole === "admin" && session ? "/admin/questions" : "/student"}>
+              {accountRole === "admin" && session ? "Administrator" : "Account & progress"}
+            </a>
             <button className="icon-button" aria-label="Notifications"><Icon name="bell" /><i /></button>
             <span className="subject">CS <b>2210</b></span>
           </div>
